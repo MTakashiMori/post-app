@@ -1,6 +1,17 @@
 <template>
 
-    <v-container>
+    <v-container style="margin-top: -10%">
+
+        <v-tooltip top>
+            <template v-slot:activator="{ on }">
+                <v-fab-transition>
+                    <v-btn left fab large absolute bottom right class="add-post primary" v-on="on" @click="addPost">
+                        <v-icon xl>mdi-plus</v-icon>
+                    </v-btn>
+                </v-fab-transition>
+            </template>
+            <span>Add post</span>
+        </v-tooltip>
 
         <v-card v-for="item in data" :key="item.id" style="margin-top: 5%">
             <v-card-title>
@@ -22,7 +33,7 @@
 
             <v-divider></v-divider>
 
-            <v-card-text>
+            <v-card-text v-if="item.comments.length > 0">
 
                 <v-timeline dense>
 
@@ -105,6 +116,51 @@
             </v-card>
         </v-dialog>
 
+        <v-dialog v-model="postDialog.status" width="50%" persistent>
+
+            <v-card>
+                <v-card-title>
+                    Write a post
+                </v-card-title>
+
+                <v-card-text>
+
+                    <v-form ref="postForm">
+
+                        <v-text-field label="Name" :rules="[ v => !!v || 'Name is required' ]" v-model="postDialog.name"></v-text-field>
+
+                    </v-form>
+
+                </v-card-text>
+
+                <v-divider></v-divider>
+
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+
+                    <v-tooltip bottom>
+                        <template v-slot:activator="{ on }">
+                            <v-btn text v-on="on" color="primary" @click="submitPost(false)">
+                                Cancel
+                            </v-btn>
+                        </template>
+                        <span>Cancel comment</span>
+                    </v-tooltip>
+
+                    <v-tooltip bottom>
+                        <template v-slot:activator="{ on }">
+                            <v-btn v-on="on" class="primary" @click="submitPost(true)">
+                                Save
+                            </v-btn>
+                        </template>
+                        <span>Save comment</span>
+                    </v-tooltip>
+
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+
     </v-container>
 
 </template>
@@ -128,6 +184,10 @@
                     type: '',
                     name: '',
                     comment: ''
+                },
+                postDialog: {
+                    status: false,
+                    name: '',
                 }
             }
         },
@@ -174,8 +234,47 @@
                 this.commentDialog.name = '';
                 this.commentDialog.comment = '';
                 this.$refs.commentForm.reset()
+            },
+            cleanPostDialog() {
+                this.postDialog.status = false;
+                this.postDialog.name = '';
+                this.$refs.postForm.reset()
+            },
+            addPost() {
+                this.postDialog.status = true;
+            },
+            submitPost(response) {
+                if(!response) {
+                    this.postDialog.status = false;
+                    this.cleanPostDialog();
+                    return;
+                }
+
+                if(!this.$refs.postForm.validate()) {
+                    return;
+                }
+
+                axios.post(process.env.VUE_APP_API_URL + '/post', {
+                    name: this.postDialog.name,
+                }).then(() => {
+                    this.getAll();
+                    this.cleanPostDialog();
+                });
             }
         }
     }
 
 </script>
+
+<style>
+
+    .add-post {
+        position: absolute;
+        position: -webkit-sticky;
+        position: sticky;
+        top: 90%;
+        margin-left: 100%;
+        z-index: 999;
+    }
+
+</style>
